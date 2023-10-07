@@ -71,7 +71,7 @@ const plugin = ({ markdownAST }, options = {}) => {
     visit(markdownAST, 'paragraph', (node, index, parent) => {
         const text = toString(node);
 
-        const internalLinkRegex = /!?\[\[([a-zA-Z-'À-ÿ|# ]+)\]\]/;
+        const internalLinkRegex = /!?\[\[([a-zA-Z-'À-ÿ^\d|# ]+)\]\]/;
 
         if (text.match(internalLinkRegex)) {
             const isEmbed = text.includes('![');
@@ -80,9 +80,19 @@ const plugin = ({ markdownAST }, options = {}) => {
             let heading = '';
 
             if (label.match(/#/)) {
+                // in [some label#heading|text]
+                // take the part after #
                 [, heading] = label.split('#');
+                // the the part before |
                 [heading] = heading.split('|');
+                // Support block references by removing the caret in front.
+                // See also below for code that generates id= anchors
+
+                // Extract the label
                 label = label.replace(`#${heading}`, '');
+
+                // Clear out the ^ of an Obsidian block ref
+                heading = heading.replace(/^\^/, '');
             }
 
             let url = titleToURL(label);
@@ -111,6 +121,15 @@ const plugin = ({ markdownAST }, options = {}) => {
             node.children = undefined;
             node.value = html;
         }
+
+        const blockRefRegex = /^\^[a-z\d\-]+$/;
+        if (text.match(blockRefRegex)) {
+            const id = slugify(text.replace('^', ''));
+            node.type = 'html';
+            node.children = undefined;
+            node.value = `<a id="${id}" class="blockref" href="#${id}">${text}</a>`;
+        }
+        return markdownAST;
     });
 
     visit(markdownAST, 'paragraph', (node) => {
