@@ -119,7 +119,7 @@ const plugin = ({ markdownAST }, options = {}) => {
 
             node.type = 'html';
             node.children = undefined;
-            node.value = html;
+            node.value = `<p>${html}</p>`;
         }
 
         const blockRefRegex = /^\^[a-z\d\-]+$/;
@@ -129,6 +129,7 @@ const plugin = ({ markdownAST }, options = {}) => {
             node.children = undefined;
             node.value = `<a id="${id}" class="blockref" href="#${id}">${text}</a>`;
         }
+
         return markdownAST;
     });
 
